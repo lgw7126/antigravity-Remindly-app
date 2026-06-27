@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Remindly - 네이버 예약 보완용 MVP</title>
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="네이버 예약을 사용하는 사장님들을 위한 노쇼 방지 및 고객 알림 레이어 서비스">
+  <link rel="stylesheet" href="index.css">
+  <!-- Lucide Icons via CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+  <!-- ================= ADMIN VIEW CONTAINER ================= -->
+  <div id="admin-view" class="app-container">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="logo-container">
+        <div class="logo-icon">
+          <i data-lucide="bell-ring" style="color: white; width: 20px; height: 20px;"></i>
+        </div>
+        <div>
+          <span class="logo-text">Remindly</span>
+          <span class="logo-tag">MVP</span>
+        </div>
+      </div>
+      
+      <nav style="margin-top: 16px;">
+        <ul class="nav-menu">
+          <li class="nav-item active" id="nav-dashboard">
+            <a href="#dashboard">
+              <i data-lucide="layout-dashboard" style="width: 18px; height: 18px;"></i>
+              대시보드
+            </a>
+          </li>
+          <li class="nav-item" id="nav-reservations">
+            <a href="#reservations">
+              <i data-lucide="calendar-days" style="width: 18px; height: 18px;"></i>
+              예약 관리
+            </a>
+          </li>
+          <li class="nav-item" id="nav-policies">
+            <a href="#policies">
+              <i data-lucide="sliders" style="width: 18px; height: 18px;"></i>
+              정책 & 메시지 설정
+            </a>
+          </li>
+          <li class="nav-item" id="nav-estimator">
+            <a href="#estimator">
+              <i data-lucide="calculator" style="width: 18px; height: 18px;"></i>
+              위약금 정산서
+            </a>
+          </li>
+        </ul>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <div class="shop-info-widget">
+          <span class="shop-name-label" id="sidebar-shop-name">불러오는 중...</span>
+          <span class="shop-type-label" id="sidebar-shop-type">...</span>
+        </div>
+        <button class="btn btn-secondary btn-sm" id="btn-reset-data" style="width: 100%; justify-content: flex-start;">
+          <i data-lucide="refresh-cw" style="width: 14px; height: 14px;"></i>
+          샘플 데이터 초기화
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <!-- 1. DASHBOARD PANEL -->
+      <section id="dashboard-panel" class="view-panel active">
+        <div class="view-header">
+          <div class="view-title-container">
+            <h1 class="view-title" id="dashboard-welcome">안녕하세요, 사장님!</h1>
+            <p class="view-subtitle">오늘의 예약 현황과 고객 확인 상태를 리포트합니다.</p>
+          </div>
+          <button class="btn btn-primary" id="btn-quick-add-booking">
+            <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+            가상 예약 추가
+          </button>
+        </div>
+        
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+          <div class="stat-card stat-blue">
+            <div class="stat-header">
+              <span>오늘 총 예약</span>
+              <div class="stat-icon-bg"><i data-lucide="users" style="width: 18px; height: 18px;"></i></div>
+            </div>
+            <div class="stat-value" id="stats-total">0</div>
+          </div>
+          <div class="stat-card stat-green">
+            <div class="stat-header">
+              <span>방문 확인 완료</span>
+              <div class="stat-icon-bg"><i data-lucide="check-circle-2" style="width: 18px; height: 18px;"></i></div>
+            </div>
+            <div class="stat-value" id="stats-confirmed">0</div>
+          </div>
+          <div class="stat-card stat-orange">
+            <div class="stat-header">
+              <span>확인 대기 중</span>
+              <div class="stat-icon-bg"><i data-lucide="clock" style="width: 18px; height: 18px;"></i></div>
+            </div>
+            <div class="stat-value" id="stats-pending">0</div>
+          </div>
+          <div class="stat-card stat-red">
+            <div class="stat-header">
+              <span>노쇼/취소 경고</span>
+              <div class="stat-icon-bg"><i data-lucide="alert-triangle" style="width: 18px; height: 18px;"></i></div>
+            </div>
+            <div class="stat-value" id="stats-risk">0</div>
+          </div>
+        </div>
+
+        <!-- Dashboard Today's Focus -->
+        <div class="panel-card">
+          <div class="flex-between">
+            <h2 class="panel-card-title">
+              <i data-lucide="activity" style="color: var(--color-primary); width: 20px; height: 20px;"></i>
+              오늘의 리마인드 우선순위 (확인 대기 고객)
+            </h2>
+            <span class="text-secondary" style="font-size: 13px;" id="unconfirmed-focus-count">대기 0명</span>
+          </div>
+          
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>예약 시간</th>
+                  <th>고객명</th>
+                  <th>연락처</th>
+                  <th>상태</th>
+                  <th>노쇼 경고 태그</th>
+                  <th>알림 전송 & 테스트</th>
+                </tr>
+              </thead>
+              <tbody id="dashboard-focus-list">
+                <!-- Javascript will inject table rows here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. RESERVATION MANAGER PANEL -->
+      <section id="reservations-panel" class="view-panel">
+        <div class="view-header">
+          <div class="view-title-container">
+            <h1 class="view-title">예약 내역 관리</h1>
+            <p class="view-subtitle">매장 내 예약 현황을 한눈에 관리하고 리마인드를 발송하세요.</p>
+          </div>
+        </div>
+
+        <div class="panel-card">
+          <!-- Filters & Actions -->
+          <div class="flex-between" style="flex-wrap: wrap; gap: 16px;">
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; flex-grow: 1;">
+              <input type="text" id="booking-search" placeholder="고객 이름 또는 전화번호 검색..." style="max-width: 300px; width: 100%;">
+              <select id="booking-filter-status">
+                <option value="ALL">전체 상태 보기</option>
+                <option value="PENDING">확인 대기 (Pending)</option>
+                <option value="CONFIRMED">확인 완료 (Confirmed)</option>
+                <option value="CANCELLED">취소됨 (Cancelled)</option>
+                <option value="CHANGEREQUESTED">변경 요청 (Change Requested)</option>
+                <option value="NOSHOW">노쇼 처리됨 (No-Show)</option>
+                <option value="LATE">지각 처리됨 (Late)</option>
+                <option value="RISK">노쇼 위험 고객</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" id="btn-add-booking-modal-trigger">
+              <i data-lucide="plus-circle" style="width: 16px; height: 16px;"></i>
+              예약 신규 등록
+            </button>
+          </div>
+
+          <!-- Full Table -->
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>날짜 / 시간</th>
+                  <th>고객 이름</th>
+                  <th>연락처</th>
+                  <th>상태</th>
+                  <th>위험도 분석</th>
+                  <th>리마인드 복사</th>
+                  <th>고객 확인 시뮬레이션</th>
+                </tr>
+              </thead>
+              <tbody id="full-reservations-list">
+                <!-- Javascript will inject all table rows here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. POLICY & MESSAGES PANEL -->
+      <section id="policies-panel" class="view-panel">
+        <div class="view-header">
+          <div class="view-title-container">
+            <h1 class="view-title">예약 정책 & 알림 설정</h1>
+            <p class="view-subtitle">업종별 최적화 템플릿을 기반으로 나만의 예약 정책과 커스텀 메시지를 만듭니다.</p>
+          </div>
+        </div>
+
+        <div class="preview-layout">
+          <!-- Left side: Forms & Settings -->
+          <div style="display: flex; flex-direction: column; gap: 24px;">
+            <!-- Category Presets Quick Select -->
+            <div class="panel-card">
+              <h2 class="panel-card-title">
+                <i data-lucide="sparkles" style="color: var(--color-purple); width: 20px; height: 20px;"></i>
+                업종별 추천 기본값 세팅
+              </h2>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px;">
+                <button class="btn btn-secondary btn-sm preset-btn" data-preset="RESTAURANT">🍽️ 파인다이닝</button>
+                <button class="btn btn-secondary btn-sm preset-btn" data-preset="HAIR">💇 미용실/헤어</button>
+                <button class="btn btn-secondary btn-sm preset-btn" data-preset="NAIL">💅 네일숍</button>
+                <button class="btn btn-secondary btn-sm preset-btn" data-preset="STUDIO">📸 사진스튜디오</button>
+                <button class="btn btn-secondary btn-sm preset-btn" data-preset="CLINIC">🏥 클리닉/병원</button>
+              </div>
+            </div>
+
+            <!-- Shop & Policy Settings Form -->
+            <div class="panel-card">
+              <h2 class="panel-card-title">
+                <i data-lucide="store" style="color: var(--color-primary); width: 20px; height: 20px;"></i>
+                기본 매장 정보 및 정책 설정
+              </h2>
+              
+              <form id="policy-form" class="form-grid" onsubmit="event.preventDefault();">
+                <!-- Shop Name -->
+                <div class="form-group">
+                  <label for="shop-name">매장명</label>
+                  <input type="text" id="shop-name" placeholder="예: 살롱 드 엘가">
+                </div>
+                
+                <!-- Naver Place Booking Link -->
+                <div class="form-group">
+                  <label for="naver-link">네이버 예약 링크 (플레이스 주소)</label>
+                  <input type="text" id="naver-link" placeholder="예: https://booking.naver.com/booking/10/bizes/12345">
+                </div>
+
+                <!-- Industry Selector -->
+                <div class="form-group">
+                  <label for="shop-industry">업종 대분류</label>
+                  <select id="shop-industry">
+                    <option value="RESTAURANT">예약제 식당</option>
+                    <option value="HAIR">미용실</option>
+                    <option value="NAIL">네일숍</option>
+                    <option value="STUDIO">스튜디오</option>
+                    <option value="CLINIC">병원/클리닉</option>
+                  </select>
+                </div>
+
+                <!-- Deposit Amount -->
+                <div class="form-group">
+                  <label for="policy-deposit">예약금 설정 (원)</label>
+                  <input type="number" id="policy-deposit" step="5000" placeholder="0인 경우 예약금 없음">
+                </div>
+
+                <!-- Bank Info for Deposit -->
+                <div class="form-group">
+                  <label for="policy-bank">예약금 입금 계좌 정보</label>
+                  <input type="text" id="policy-bank" placeholder="예: 신한은행 110-123-456789 (홍길동)">
+                </div>
+
+                <!-- Lateness Grace Period -->
+                <div class="form-group">
+                  <label for="policy-grace">지각 허용 시간 (분)</label>
+                  <input type="number" id="policy-grace" placeholder="예: 10분 지각시 예약 자동취소">
+                </div>
+
+                <!-- Cancellation Rules Description -->
+                <div class="form-group form-group-full">
+                  <label for="policy-rules">취소/환불 기준 고지 (안내 메시지에 삽입됩니다)</label>
+                  <textarea id="policy-rules" placeholder="예: 예약 당일 취소 시 예약금 반환 불가 / 1일 전까지 취소 시 50% 환불 / 2일 전 100% 환불"></textarea>
+                </div>
+                
+                <div class="form-group form-group-full">
+                  <button type="button" class="btn btn-primary" id="btn-save-policies" style="align-self: flex-start;">
+                    <i data-lucide="save" style="width: 16px; height: 16px;"></i>
+                    정책 및 매장정보 저장
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Right side: Message Preview Phone Mockup -->
+          <div style="display: flex; flex-direction: column; gap: 20px;">
+            <div class="panel-card" style="position: sticky; top: 32px;">
+              <h2 class="panel-card-title">
+                <i data-lucide="smartphone" style="color: var(--color-success); width: 20px; height: 20px;"></i>
+                카카오 알림톡 실시간 미리보기
+              </h2>
+              
+              <!-- Tab select for Message Type -->
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <label>전송 단계</label>
+                <div class="tone-tabs" id="msg-type-tabs">
+                  <div class="tone-tab active" data-msg-type="CONFIRM">예약 확정</div>
+                  <div class="tone-tab" data-msg-type="REMIND_1DAY">1일 전 알림</div>
+                  <div class="tone-tab" data-msg-type="REMIND_DAY">당일 알림</div>
+                  <div class="tone-tab" data-msg-type="POST_VISIT">방문 후 감사</div>
+                </div>
+              </div>
+
+              <!-- Selector for Message Tone -->
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <label>안내 메시지 톤앤매너</label>
+                <div class="tone-tabs" id="msg-tone-tabs">
+                  <div class="tone-tab active" data-tone="FRIENDLY">친절하게 😊</div>
+                  <div class="tone-tab" data-tone="FIRM">단호하게 ⚠️</div>
+                  <div class="tone-tab" data-tone="PREMIUM">고급스럽게 ✨</div>
+                </div>
+              </div>
+
+              <!-- Phone Preview Container -->
+              <div class="phone-mockup">
+                <div class="phone-screen">
+                  <div class="kakao-bubble">
+                    <div class="kakao-header">
+                      <span>알림톡 알림</span>
+                      <span class="kakao-header-badge">Remindly</span>
+                    </div>
+                    <div class="kakao-body" id="preview-msg-text">
+                      [예약 확정 안내]<br>
+                      안녕하세요, 살롱 드 엘가입니다...
+                    </div>
+                    <div class="kakao-btn kakao-btn-primary" id="preview-msg-button">
+                      방문 여부 확인하기 (원클릭)
+                    </div>
+                    <div class="kakao-btn" id="preview-msg-button-naver" style="margin-top: -4px;">
+                      네이버 예약 내역 보기
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 10px; margin-top: 10px;">
+                <button class="btn btn-primary" id="btn-copy-template-text" style="flex-grow: 1;">
+                  <i data-lucide="copy" style="width: 16px; height: 16px;"></i>
+                  미리보기 문구 복사하기
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. REFUND ESTIMATOR PANEL -->
+      <section id="estimator-panel" class="view-panel">
+        <div class="view-header">
+          <div class="view-title-container">
+            <h1 class="view-title">취소/노쇼 위약금 정산서 빌더</h1>
+            <p class="view-subtitle">취소 수수료 관련 분쟁 발생 시, 감정을 덜어내고 약관에 정해진 내역을 정식 정산서 형식으로 생성해 보냅니다.</p>
+          </div>
+        </div>
+
+        <div class="preview-layout">
+          <!-- Estimator Inputs -->
+          <div class="panel-card">
+            <h2 class="panel-card-title">
+              <i data-lucide="calculator" style="color: var(--color-primary); width: 20px; height: 20px;"></i>
+              위약금 및 환불금액 계산
+            </h2>
+            
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="est-customer">고객명</label>
+                <input type="text" id="est-customer" value="김철수">
+              </div>
+              <div class="form-group">
+                <label for="est-deposit">기입금 예약금 (원)</label>
+                <input type="number" id="est-deposit" value="10000" step="1000">
+              </div>
+              <div class="form-group">
+                <label for="est-cancel-time">취소 접수 시점</label>
+                <select id="est-cancel-time">
+                  <option value="2">예약 시간 기준 2시간 이내 취소</option>
+                  <option value="12">예약 시간 기준 24시간 이내 취소</option>
+                  <option value="48">예약 기준 48시간 이내 취소</option>
+                  <option value="NOSHOW">연락 없는 미방문 (노쇼)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="est-penalty-rate">위약금 부과 비율 (%)</label>
+                <input type="number" id="est-penalty-rate" value="100" min="0" max="100">
+              </div>
+            </div>
+            
+            <div class="form-group-full" style="display: flex; gap: 10px; margin-top: 10px;">
+              <button class="btn btn-primary" id="btn-calculate-refund">
+                <i data-lucide="calculator" style="width: 16px; height: 16px;"></i>
+                정산서 계산 및 빌드
+              </button>
+            </div>
+          </div>
+
+          <!-- Estimator Result Card -->
+          <div class="panel-card">
+            <h2 class="panel-card-title">
+              <i data-lucide="file-text" style="color: var(--color-danger); width: 20px; height: 20px;"></i>
+              전송용 정산 고지서 문구
+            </h2>
+            
+            <div style="background-color: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); border-radius: 8px; padding: 18px; font-family: monospace; white-space: pre-wrap; font-size: 13px; line-height: 1.5; color: var(--text-primary);" id="est-result-text">
+<!-- Will be injected by JS -->
+            </div>
+            
+            <button class="btn btn-secondary" id="btn-copy-est-text">
+              <i data-lucide="copy" style="width: 16px; height: 16px;"></i>
+              정산서 문자 복사하기
+            </button>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+  </div>
+  <!-- ================= /ADMIN VIEW CONTAINER ================= -->
+
+
+  <!-- ================= CUSTOMER PORTAL VIEW ================= -->
+  <div id="customer-view" class="customer-portal-view" style="display: none;">
+    <div class="customer-mobile-card">
+      
+      <!-- Card Header: Shop logo and title -->
+      <div class="customer-card-header">
+        <div class="customer-logo-bg">
+          <i data-lucide="calendar" style="color: white; width: 26px; height: 26px;"></i>
+        </div>
+        <h1 class="customer-shop-title" id="cust-shop-name">매장명</h1>
+        <span class="tag industry-badge" id="cust-shop-industry">스튜디오</span>
+      </div>
+
+      <!-- Card Body: Summary and actions -->
+      <div class="customer-card-body">
+        
+        <!-- Status Notification banner if already confirmed or cancelled -->
+        <div id="cust-status-banner-container">
+          <!-- Will be injected by JS -->
+        </div>
+
+        <div class="booking-summary-box">
+          <div class="summary-row">
+            <span class="summary-label">예약자명</span>
+            <span class="summary-val" id="cust-name">홍길동님</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">예약 시간</span>
+            <span class="summary-val" id="cust-time" style="color: var(--color-primary);">6월 24일 14:00</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">예약금 상태</span>
+            <span class="summary-val text-success" id="cust-deposit-status">확인 완료 (10,000원)</span>
+          </div>
+        </div>
+
+        <!-- Policy guide notice -->
+        <div class="customer-policy-notice">
+          <strong>⚠️ 취소 및 지각 규정 안내</strong><br>
+          <span id="cust-policy-text">방문 24시간 전 취소는 전액 환불되며, 당일 취소 시 위약금이 발생합니다. 10분 지각 시 예약이 자동으로 취소될 수 있습니다.</span>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="customer-actions" id="customer-action-buttons">
+          <button class="customer-btn-action btn-confirm-attendance" id="btn-cust-confirm">
+            <i data-lucide="check" style="width: 18px; height: 18px;"></i>
+            방문 확인 (네, 가겠습니다)
+          </button>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <button class="customer-btn-action btn-change-request" id="btn-cust-change">
+              <i data-lucide="calendar-range" style="width: 14px; height: 14px;"></i>
+              일정 변경 요청
+            </button>
+            <button class="customer-btn-action btn-cancel-attendance" id="btn-cust-cancel">
+              <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+              예약 취소 신청
+            </button>
+          </div>
+        </div>
+
+        <!-- Back to Admin Dashboard simulator shortcut link -->
+        <div style="text-align: center; margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px;">
+          <a href="#dashboard" class="btn btn-secondary btn-sm" id="btn-back-to-admin">
+            <i data-lucide="arrow-left" style="width: 14px; height: 14px;"></i>
+            관리자 대시보드로 돌아가기 (시뮬레이션)
+          </a>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+  <!-- ================= /CUSTOMER PORTAL VIEW ================= -->
+
+  <!-- ================= E2E DUAL SIMULATOR MODAL ================= -->
+  <div id="dual-simulator-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 99999; align-items: center; justify-content: center; backdrop-filter: blur(8px);">
+    <div class="simulator-modal-container" style="max-width: 900px; width: 95%; max-height: 90vh; display: flex; flex-direction: column; background: #0f172a; border: 1px solid var(--border-color); border-radius: 24px; box-shadow: var(--shadow-lg); overflow: hidden;">
+      
+      <!-- Modal Header -->
+      <div class="flex-between" style="padding: 20px 24px; border-bottom: 1px solid var(--border-color); background: rgba(30, 41, 59, 0.5);">
+        <h2 class="panel-card-title" style="margin: 0;">
+          <i data-lucide="smartphone" style="color: var(--color-primary); width: 22px; height: 22px;"></i>
+          실시간 E2E 알림 & 고객 확인 시뮬레이터
+        </h2>
+        <button class="btn btn-secondary btn-sm" id="btn-close-dual-simulator" style="padding: 6px 12px; font-size: 14px;">✕ 닫기</button>
+      </div>
+
+      <!-- Modal Body: Split view -->
+      <div class="simulator-split-body" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding: 24px; overflow-y: auto; flex-grow: 1; background: #0b0f19;">
+        
+        <!-- Left Column: KakaoTalk Chat Bubble -->
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="font-size: 14px; font-weight: 600; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; margin: 0;">
+              <i data-lucide="message-square" style="width: 16px; height: 16px; color: #fee500;"></i>
+              1. 발송되는 카카오톡 알림톡 문구
+            </h3>
+            <button class="btn btn-secondary btn-sm" id="btn-copy-sim-msg" style="padding: 4px 10px; font-size: 11px;">
+              <i data-lucide="copy" style="width: 12px; height: 12px;"></i>
+              문구 복사
+            </button>
+          </div>
+          
+          <div class="phone-mockup" style="max-width: 100%; height: 480px; margin: 0; border-width: 8px; border-radius: 24px;">
+            <div class="phone-screen" style="background-color: #bacee0; padding: 14px;"> <!-- Kakao blue theme -->
+              <div class="kakao-bubble" style="max-width: 100%; font-size: 12px; line-height: 1.4;">
+                <div class="kakao-header">
+                  <span>알림톡 안내</span>
+                  <span class="kakao-header-badge" style="background-color: #fee500; color: #1e1e1e;">Remindly</span>
+                </div>
+                <div class="kakao-body" id="sim-kakao-body" style="white-space: pre-wrap; font-family: sans-serif; font-size: 11.5px;">
+                  <!-- Injected by JS -->
+                </div>
+                <div class="kakao-btn kakao-btn-primary" style="font-weight: bold; pointer-events: none; margin-top: 8px;">
+                  방문 여부 확인하기 (원클릭)
+                </div>
+                <div class="kakao-btn" style="pointer-events: none; margin-top: 4px;">
+                  네이버 예약 내역 보기
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Interactive Customer View -->
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          <h3 style="font-size: 14px; font-weight: 600; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; margin: 0;">
+            <i data-lucide="smartphone" style="width: 16px; height: 16px; color: var(--color-success);"></i>
+            2. 고객의 스마트폰 확인 화면 (링크 클릭 시)
+          </h3>
+          
+          <div class="phone-mockup" style="max-width: 100%; height: 480px; margin: 0; border-width: 8px; border-radius: 24px;">
+            <div class="phone-screen" style="background-color: #0f172a; padding: 0; overflow-y: auto;">
+              <!-- Header -->
+              <div style="background: linear-gradient(135deg, var(--color-primary), var(--color-purple)); padding: 20px 16px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                <div style="width: 36px; height: 36px; border-radius: 10px; background-color: rgba(255, 255, 255, 0.2); display: flex; align-items: center; justify-content: center; color: white;">
+                  <i data-lucide="calendar" style="width: 18px; height: 18px;"></i>
+                </div>
+                <h4 id="sim-cust-shop-name" style="font-family: var(--font-heading); font-size: 15px; font-weight: 700; color: white; margin: 0;">매장명</h4>
+                <span class="tag industry-badge" id="sim-cust-shop-industry" style="font-size: 9px; padding: 1px 4px;">업종</span>
+              </div>
+              
+              <div style="padding: 16px; display: flex; flex-direction: column; gap: 14px;">
+                
+                <!-- Status Banner -->
+                <div id="sim-cust-status-banner-container"></div>
+
+                <div class="booking-summary-box" style="padding: 12px; gap: 8px; font-size: 12px; background: rgba(255, 255, 255, 0.03);">
+                  <div class="summary-row">
+                    <span class="summary-label">예약자명</span>
+                    <span class="summary-val" id="sim-cust-name" style="color: white;">-</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="summary-label">예약 시간</span>
+                    <span class="summary-val" id="sim-cust-time" style="color: var(--color-primary); font-weight: bold;">--</span>
+                  </div>
+                  <div class="summary-row">
+                    <span class="summary-label">예약금 상태</span>
+                    <span class="summary-val" id="sim-cust-deposit">-</span>
+                  </div>
+                </div>
+
+                <div class="customer-policy-notice" style="font-size: 11px; padding-left: 8px; border-left: 2px solid var(--color-warning);">
+                  <strong>⚠️ 안내 규정</strong>
+                  <span id="sim-cust-policy" style="display: block; margin-top: 4px; font-size: 10.5px; line-height: 1.4; color: var(--text-secondary);">...</span>
+                </div>
+
+                <!-- Interactive Buttons -->
+                <div class="customer-actions" id="sim-cust-action-buttons" style="gap: 8px;">
+                  <button class="customer-btn-action btn-confirm-attendance" id="sim-btn-confirm" style="padding: 10px; font-size: 12.5px;">
+                    <i data-lucide="check" style="width: 14px; height: 14px;"></i>
+                    방문 확인 (네, 가겠습니다)
+                  </button>
+                  
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <button class="customer-btn-action btn-change-request" id="sim-btn-change" style="padding: 8px; font-size: 11px;">
+                      변경 요청
+                    </button>
+                    <button class="customer-btn-action btn-cancel-attendance" id="sim-btn-cancel" style="padding: 8px; font-size: 11px;">
+                      예약 취소
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ================= /E2E DUAL SIMULATOR MODAL ================= -->
+
+  <!-- Modal: Add Reservation -->
+  <div id="add-booking-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div class="panel-card" style="max-width: 450px; width: 90%; background: #0f172a; border: 1px solid var(--border-color); box-shadow: var(--shadow-lg);">
+      <div class="flex-between">
+        <h2 class="panel-card-title"><i data-lucide="plus-circle" style="color: var(--color-primary);"></i>예약 등록</h2>
+        <button class="btn btn-secondary btn-sm" id="btn-close-booking-modal" style="padding: 4px 8px;">✕</button>
+      </div>
+      
+      <form id="add-booking-form" class="form-grid" style="grid-template-columns: 1fr;" onsubmit="event.preventDefault();">
+        <div class="form-group">
+          <label for="new-booking-name">고객명</label>
+          <input type="text" id="new-booking-name" required placeholder="예: 김철수">
+        </div>
+        <div class="form-group">
+          <label for="new-booking-phone">연락처</label>
+          <input type="text" id="new-booking-phone" required placeholder="예: 010-1234-5678">
+          <div id="new-booking-phone-warning" class="phone-warning-text" style="display: none; color: #ef4444; font-size: 11.5px; margin-top: 4px; font-weight: 500;"></div>
+        </div>
+        <div class="form-group">
+          <label for="new-booking-datetime">예약 날짜 & 시간</label>
+          <input type="datetime-local" id="new-booking-datetime" required>
+        </div>
+        <div class="form-group">
+          <label for="new-booking-deposit">예약금 입금 상태</label>
+          <select id="new-booking-deposit">
+            <option value="PAID">입금 확인 완료 (Paid)</option>
+            <option value="UNPAID">미입금 (Unpaid)</option>
+            <option value="NONE">예약금 대상 아님</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="new-booking-noshow">기존 노쇼 경고 누적 고객인가요?</label>
+          <select id="new-booking-noshow">
+            <option value="NO">아니오 (Clean)</option>
+            <option value="YES">예 (1회 이상 노쇼 경고 이력 있음) ⚠️</option>
+          </select>
+        </div>
+        
+        <button class="btn btn-primary" id="btn-save-new-booking" style="margin-top: 10px;">
+          등록 완료
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Edit Reservation -->
+  <div id="edit-booking-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div class="panel-card" style="max-width: 450px; width: 90%; background: #0f172a; border: 1px solid var(--border-color); box-shadow: var(--shadow-lg);">
+      <div class="flex-between">
+        <h2 class="panel-card-title"><i data-lucide="edit-3" style="color: var(--color-primary);"></i>예약 정보 수정</h2>
+        <button class="btn btn-secondary btn-sm" id="btn-close-edit-modal" style="padding: 4px 8px;">✕</button>
+      </div>
+      
+      <form id="edit-booking-form" class="form-grid" style="grid-template-columns: 1fr;" onsubmit="event.preventDefault();">
+        <input type="hidden" id="edit-booking-id">
+        <div class="form-group">
+          <label for="edit-booking-name">고객명</label>
+          <input type="text" id="edit-booking-name" required placeholder="예: 김철수">
+        </div>
+        <div class="form-group">
+          <label for="edit-booking-phone">연락처</label>
+          <input type="text" id="edit-booking-phone" required placeholder="예: 010-1234-5678">
+          <div id="edit-booking-phone-warning" class="phone-warning-text" style="display: none; color: #ef4444; font-size: 11.5px; margin-top: 4px; font-weight: 500;"></div>
+        </div>
+        <div class="form-group">
+          <label for="edit-booking-datetime">예약 날짜 & 시간</label>
+          <input type="datetime-local" id="edit-booking-datetime" required>
+        </div>
+        <div class="form-group">
+          <label for="edit-booking-deposit">예약금 입금 상태</label>
+          <select id="edit-booking-deposit">
+            <option value="PAID">입금 확인 완료 (Paid)</option>
+            <option value="UNPAID">미입금 (Unpaid)</option>
+            <option value="NONE">예약금 대상 아님</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="edit-booking-noshow">기존 노쇼 경고 누적 고객인가요?</label>
+          <select id="edit-booking-noshow">
+            <option value="NO">아니오 (Clean)</option>
+            <option value="YES">예 (1회 이상 노쇼 경고 이력 있음) ⚠️</option>
+          </select>
+        </div>
+        
+        <button class="btn btn-primary" id="btn-save-edit-booking" style="margin-top: 10px;">
+          수정 완료
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Overlay -->
+  <div id="copy-toast" class="toast">
+    <i data-lucide="check-circle" style="width: 16px; height: 16px;"></i>
+    <span id="toast-message">클립보드에 복사되었습니다!</span>
+  </div>
+
+  <!-- Main JavaScript File -->
+  <script src="app.js"></script>
+</body>
+</html>
